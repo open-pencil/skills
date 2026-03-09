@@ -58,6 +58,30 @@ bun open-pencil find design.fig --type TEXT --page "Home"
 bun open-pencil find design.fig --name "Card" --type COMPONENT --limit 50
 ```
 
+### XPath Query
+
+Find nodes using XPath selectors — filter by type, attributes, and tree structure:
+
+```bash
+# All frames
+bun open-pencil query design.fig "//FRAME"
+
+# Frames narrower than 300px
+bun open-pencil query design.fig "//FRAME[@width < 300]"
+
+# Text with "Button" in the name
+bun open-pencil query design.fig "//TEXT[contains(@name, 'Button')]"
+
+# Components with auto-layout
+bun open-pencil query design.fig "//COMPONENT[@stackMode]"
+
+# Deeply nested — text inside frames inside components
+bun open-pencil query design.fig "//COMPONENT//FRAME//TEXT"
+
+# App mode
+bun open-pencil query "//FRAME[@width > 1000]"
+```
+
 Node types: `FRAME`, `TEXT`, `RECTANGLE`, `ELLIPSE`, `VECTOR`, `GROUP`, `COMPONENT`, `COMPONENT_SET`, `INSTANCE`, `SECTION`, `LINE`, `STAR`, `POLYGON`, `SLICE`, `BOOLEAN_OPERATION`
 
 ### Export
@@ -177,27 +201,36 @@ npx openpencil-mcp-http
 ### MCP Workflow
 
 1. **Open a file** — `open_file { path: "/path/to/design.fig" }` or `new_document {}`
-2. **Query** — `get_page_tree`, `find_nodes`, `get_node`, `list_pages`, etc.
-3. **Modify** — `render` (JSX), `set_fill`, `set_layout`, `create_shape`, etc.
-4. **Save** — `save_file { path: "/path/to/output.fig" }`
+2. **Query** — `get_page_tree`, `find_nodes`, `query_nodes`, `get_node`, `list_pages`, etc.
+3. **Inspect** — `get_jsx` (JSX view), `diff_jsx` (structural diff), `describe` (semantic analysis), `export_image` (visual screenshot)
+4. **Modify** — `render` (JSX), `set_fill`, `set_layout`, `create_shape`, etc.
+5. **Save** — `save_file { path: "/path/to/output.fig" }`
 
-### MCP Tools (86 total)
+### MCP Tools (94 total)
 
-**Read (11):** `get_selection`, `get_page_tree`, `get_node`, `find_nodes`, `get_components`, `list_pages`, `switch_page`, `get_current_page`, `page_bounds`, `select_nodes`, `list_fonts`
+**Read (14):** `get_selection`, `get_page_tree`, `get_node`, `find_nodes`, `query_nodes`, `get_components`, `list_pages`, `switch_page`, `get_current_page`, `page_bounds`, `select_nodes`, `list_fonts`, `get_jsx`, `diff_jsx`
 
 **Create (7):** `create_shape`, `render`, `create_component`, `create_instance`, `create_page`, `create_vector`, `create_slice`
 
-**Modify (19):** `set_fill`, `set_stroke`, `set_effects`, `update_node`, `set_layout`, `set_constraints`, `set_rotation`, `set_opacity`, `set_radius`, `set_min_max`, `set_text`, `set_font`, `set_font_range`, `set_text_resize`, `set_visible`, `set_blend`, `set_locked`, `set_stroke_align`, `set_text_properties`, `set_layout_child`
+**Modify (20):** `set_fill`, `set_stroke`, `set_effects`, `update_node`, `set_layout`, `set_constraints`, `set_rotation`, `set_opacity`, `set_radius`, `set_min_max`, `set_text`, `set_font`, `set_font_range`, `set_text_resize`, `set_visible`, `set_blend`, `set_locked`, `set_stroke_align`, `set_text_properties`, `set_layout_child`
 
-**Structure (16):** `delete_node`, `clone_node`, `rename_node`, `reparent_node`, `group_nodes`, `ungroup_node`, `flatten_nodes`, `node_to_component`, `node_bounds`, `node_move`, `node_resize`, `node_ancestors`, `node_children`, `node_tree`, `node_bindings`, `node_replace_with`, `arrange_nodes`
+**Structure (17):** `delete_node`, `clone_node`, `rename_node`, `reparent_node`, `group_nodes`, `ungroup_node`, `flatten_nodes`, `node_to_component`, `node_bounds`, `node_move`, `node_resize`, `node_ancestors`, `node_children`, `node_tree`, `node_bindings`, `node_replace_with`, `arrange_nodes`
 
 **Variables (11):** `list_variables`, `list_collections`, `get_variable`, `find_variables`, `create_variable`, `set_variable`, `delete_variable`, `bind_variable`, `get_collection`, `create_collection`, `delete_collection`
 
-**Vector & Export (13):** `boolean_union`, `boolean_subtract`, `boolean_intersect`, `boolean_exclude`, `path_get`, `path_set`, `path_scale`, `path_flip`, `path_move`, `viewport_get`, `viewport_set`, `viewport_zoom_to_fit`, `export_svg`, `export_image`
+**Vector & Export (14):** `boolean_union`, `boolean_subtract`, `boolean_intersect`, `boolean_exclude`, `path_get`, `path_set`, `path_scale`, `path_flip`, `path_move`, `viewport_get`, `viewport_set`, `viewport_zoom_to_fit`, `export_svg`, `export_image`
 
-**Analyze (7):** `analyze_colors`, `analyze_typography`, `analyze_spacing`, `analyze_clusters`, `diff_create`, `diff_show`, `eval`
+**Analyze & Inspect (8):** `analyze_colors`, `analyze_typography`, `analyze_spacing`, `analyze_clusters`, `diff_create`, `diff_show`, `describe`, `eval`
 
 **File (3):** `open_file`, `save_file`, `new_document`
+
+### Key tools for AI agents
+
+- **`query_nodes`** — XPath selectors to find specific nodes without fetching the full tree. Essential for large files.
+- **`get_jsx`** — see any node as JSX (same format the `render` tool accepts). Useful for understanding structure before modifying.
+- **`diff_jsx`** — unified diff between two nodes. Compare before/after, or find differences between similar components.
+- **`describe`** — semantic analysis: what role a node plays, its visual style, layout properties, and potential design issues.
+- **`export_image`** — render a node to PNG and return it. Use for visual verification after making changes.
 
 ### JSX Rendering (via `render` tool or `eval`)
 
@@ -215,7 +248,7 @@ Create entire component trees in one call:
 </Frame>
 ```
 
-**Elements:** `Frame`, `Rectangle`, `Ellipse`, `Text`, `Line`, `Star`, `Polygon`, `Vector`, `Group`, `Instance`
+**Elements:** `Frame`, `Text`, `Rectangle`, `Ellipse`, `Line`, `Star`, `Polygon`, `Group`, `Section`, `Component`
 
 **Layout shorthands:**
 
@@ -223,26 +256,36 @@ Create entire component trees in one call:
 |------|---------|
 | `w`, `h` | Width, height (number or `"hug"` / `"fill"`) |
 | `flex` | `"row"` or `"col"` |
-| `gap` | Item spacing |
+| `grid`, `columns`, `rows` | CSS Grid — e.g. `columns="1fr 200px 1fr"` |
+| `gap`, `rowGap`, `columnGap` | Item spacing |
 | `p`, `px`, `py`, `pt`, `pr`, `pb`, `pl` | Padding |
 | `justify` | `"start"`, `"center"`, `"end"`, `"between"` |
-| `items` | `"start"`, `"center"`, `"end"` |
+| `items` | `"start"`, `"center"`, `"end"`, `"stretch"` |
+| `grow` | Flex grow factor |
 | `bg` | Fill color (hex) |
-| `rounded` | Corner radius |
+| `rounded`, `roundedTL/TR/BL/BR` | Corner radius |
 | `stroke`, `strokeWidth` | Stroke color and weight |
 | `opacity` | 0–1 |
-| `size`, `weight`, `font`, `color` | Text properties |
+| `rotate` | Degrees |
+| `overflow` | `"hidden"` to clip children |
+| `shadow` | `"offsetX offsetY blur #color"` |
+| `blur` | Layer blur |
+| `size`, `weight`, `font`, `color`, `textAlign` | Text properties |
+| `colStart`, `rowStart`, `colSpan`, `rowSpan` | Grid child positioning |
 
 ## Node IDs
 
-Format: `session:local` (e.g., `1:23`). Get IDs from `find`, `tree`, or `node` commands.
+Format: `session:local` (e.g., `1:23`). Get IDs from `find`, `tree`, `query`, or `node` commands.
 
 ## Tips
 
 - Omit the file path to work with the document open in the running OpenPencil editor
 - Start with `info` to understand the document structure
 - Use `tree --depth 2` for a quick overview without overwhelming output
-- Use `find --type COMPONENT` to discover reusable components
+- Use `query "//COMPONENT"` to discover reusable components with XPath
+- Use `query_nodes` (MCP) to find exactly the nodes you need in large files — avoids fetching the whole tree
+- Use `get_jsx` to see how a node is structured before modifying it
+- After modifying designs, use `export_image` to visually verify the result
 - Use `analyze colors --similar` to find near-duplicate colors to merge
 - Export specific nodes with `--node` instead of full pages for faster results
 - The `eval` command gives you the full Figma Plugin API for anything the CLI doesn't cover
