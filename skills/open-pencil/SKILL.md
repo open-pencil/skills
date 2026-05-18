@@ -1,14 +1,16 @@
 ---
 name: open-pencil
-description: Work with Figma .fig design files and the running OpenPencil editor — inspect structure, query nodes, analyze design tokens, export images/SVG/JSX, and modify designs programmatically. Use when asked to open, inspect, export, analyze, or edit .fig files, or to control the running OpenPencil app.
+description: Work with Figma .fig design files and the running OpenPencil editor — inspect structure, query nodes, analyze design tokens, export PNG/SVG/PDF/JSX, and modify designs programmatically. Use when asked to open, inspect, export, analyze, or edit .fig files, or to control the running OpenPencil app.
 ---
 
 # OpenPencil
 
-CLI and MCP server for .fig design files. Two modes of operation:
+OpenPencil provides a CLI and MCP server for `.fig` design files and the running OpenPencil editor.
 
-- **App mode** — connect to the running OpenPencil editor (omit the file argument)
-- **Headless mode** — work with .fig files directly (pass a file path)
+Use two modes:
+
+- **App mode** — connect to the running OpenPencil editor by omitting the file argument.
+- **Headless mode** — work with `.fig` files directly by passing a file path.
 
 ```bash
 # App mode — operates on the document open in the editor
@@ -18,124 +20,115 @@ bun open-pencil tree
 bun open-pencil tree design.fig
 ```
 
-The app exposes an automation bridge on `http://127.0.0.1:7600` when running. The CLI auto-connects to it when no file path is provided.
+Current reference version: OpenPencil `0.12.x`. The MCP server exposes 106 tools in `0.12.0`.
+
+## Requirements
+
+```bash
+# CLI
+bun add -g @open-pencil/cli
+
+# MCP server used by the desktop app and external MCP clients
+bun add -g @open-pencil/mcp
+```
+
+The desktop app starts `openpencil-mcp-http` automatically in production Tauri builds when `@open-pencil/mcp` is installed globally and exposes automation on:
+
+- HTTP/RPC: `http://127.0.0.1:7600`
+- WebSocket bridge: `ws://127.0.0.1:7601`
+- MCP Streamable HTTP: `http://127.0.0.1:7600/mcp`
 
 ## CLI Commands
+
+```bash
+bun open-pencil --help
+```
+
+Commands in `0.12.x`:
+
+- `info` — document overview: pages, node counts, fonts
+- `tree` — print hierarchy with types and sizes
+- `pages` — list pages
+- `node` — detailed node properties by ID
+- `selection` — current selection from the running app
+- `find` — find nodes by name/type
+- `query` — XPath selectors for node search
+- `variables` — list variables and collections
+- `export` — export PNG/JPG/WEBP/SVG/PDF/JSX/.fig
+- `convert` — convert between supported document formats
+- `analyze` — colors, typography, spacing, repeated clusters
+- `lint` — consistency, structure, and accessibility checks
+- `formats` — supported document/export formats
+- `eval` — execute JavaScript with the Figma Plugin API
 
 ### Inspect
 
 ```bash
-# Document overview — pages, node counts, fonts
 bun open-pencil info design.fig
-
-# Node tree — shows hierarchy with types and sizes
 bun open-pencil tree design.fig
-bun open-pencil tree --page "Components" --depth 3  # app mode, specific page
-
-# List pages
+bun open-pencil tree --page "Components" --depth 3  # app mode
 bun open-pencil pages design.fig
-
-# Detailed node properties — fills, strokes, effects, layout, text
 bun open-pencil node design.fig --id 1:23
 bun open-pencil node --id 1:23  # app mode
-
-# List design variables and collections
+bun open-pencil selection --json
 bun open-pencil variables design.fig
 bun open-pencil variables --collection "Colors" --type COLOR
 ```
 
-### Search
+### Search and XPath query
 
 ```bash
-# Find by name (partial match, case-insensitive)
 bun open-pencil find design.fig --name "Button"
-
-# Find by type
 bun open-pencil find --type FRAME                          # app mode
 bun open-pencil find design.fig --type TEXT --page "Home"
-
-# Combine filters
 bun open-pencil find design.fig --name "Card" --type COMPONENT --limit 50
-```
 
-### XPath Query
-
-Find nodes using XPath selectors — filter by type, attributes, and tree structure:
-
-```bash
-# All frames
 bun open-pencil query design.fig "//FRAME"
-
-# Frames narrower than 300px
 bun open-pencil query design.fig "//FRAME[@width < 300]"
-
-# Text with "Button" in the name
 bun open-pencil query design.fig "//TEXT[contains(@name, 'Button')]"
-
-# Components with auto-layout
 bun open-pencil query design.fig "//COMPONENT[@stackMode]"
-
-# Deeply nested — text inside frames inside components
 bun open-pencil query design.fig "//COMPONENT//FRAME//TEXT"
-
-# App mode
-bun open-pencil query "//FRAME[@width > 1000]"
+bun open-pencil query "//FRAME[@width > 1000]"             # app mode
 ```
 
-Node types: `FRAME`, `TEXT`, `RECTANGLE`, `ELLIPSE`, `VECTOR`, `GROUP`, `COMPONENT`, `COMPONENT_SET`, `INSTANCE`, `SECTION`, `LINE`, `STAR`, `POLYGON`, `SLICE`, `BOOLEAN_OPERATION`
+Common node types: `FRAME`, `TEXT`, `RECTANGLE`, `ELLIPSE`, `VECTOR`, `GROUP`, `COMPONENT`, `COMPONENT_SET`, `INSTANCE`, `SECTION`, `LINE`, `STAR`, `POLYGON`, `SLICE`, `BOOLEAN_OPERATION`.
 
-### Export
+### Export and convert
 
 ```bash
-# PNG (default)
 bun open-pencil export design.fig -o hero.png
-bun open-pencil export -o hero.png  # app mode — exports from running editor
-
-# Specific node at 2x
+bun open-pencil export -o hero.png                         # app mode
 bun open-pencil export design.fig --node 1:23 -s 2 -o button@2x.png
-
-# JPG with quality
 bun open-pencil export design.fig -f jpg -q 85 -o preview.jpg
-
-# SVG
 bun open-pencil export design.fig -f svg --node 1:23 -o icon.svg
-
-# JSX (OpenPencil format — renderable back into .fig)
+bun open-pencil export design.fig -f pdf -o page.pdf
+bun open-pencil export design.fig -f fig -o roundtrip.fig
 bun open-pencil export design.fig -f jsx -o component.jsx
-
-# JSX (Tailwind — React component with Tailwind classes)
 bun open-pencil export design.fig -f jsx --style tailwind -o component.tsx
-
-# Page thumbnail
 bun open-pencil export design.fig --thumbnail --width 1920 --height 1080
-
-# Specific page
 bun open-pencil export --page "Components" -o components.png
+
+bun open-pencil convert design.fig -o design.pen
+bun open-pencil formats
 ```
 
-### Analyze
+### Analyze and lint
 
 ```bash
-# Color palette — usage frequency, similar colors
 bun open-pencil analyze colors design.fig
-bun open-pencil analyze colors --similar --threshold 10  # app mode
-
-# Typography — font families, sizes, weights
+bun open-pencil analyze colors --similar --threshold 10     # app mode
 bun open-pencil analyze typography design.fig --group-by size
-
-# Spacing — gap and padding values, grid compliance
 bun open-pencil analyze spacing design.fig --grid 8
-
-# Clusters — repeated patterns that could be components
 bun open-pencil analyze clusters design.fig --min-count 3
+bun open-pencil lint design.fig
+bun open-pencil lint design.fig --json
 ```
 
 ### Eval (Figma Plugin API)
 
-Execute JavaScript against the document using the full Figma Plugin API:
+Execute JavaScript against the document using a Figma Plugin API-compatible runtime:
 
 ```bash
-# Read-only — query the document
 bun open-pencil eval design.fig -c 'figma.currentPage.findAll(n => n.type === "TEXT").length'
 
 # App mode — modifies the live document in the editor
@@ -145,7 +138,7 @@ bun open-pencil eval -c '
   buttons.length + " buttons updated"
 '
 
-# Modify and save to file
+# Modify and save to the same file
 bun open-pencil eval design.fig -w -c '
   const texts = figma.currentPage.findAll(n => n.type === "TEXT");
   texts.forEach(t => { t.fontSize = 16 });
@@ -158,83 +151,90 @@ bun open-pencil eval design.fig -o modified.fig -c '...'
 echo 'figma.currentPage.children.map(n => n.name)' | bun open-pencil eval design.fig --stdin
 ```
 
-The eval environment provides `figma` with the Figma Plugin API: `figma.currentPage`, `figma.createFrame()`, `figma.createText()`, `figma.getNodeById()`, etc.
-
-### JSON Output
-
-Every command supports `--json` for machine-readable output:
-
-```bash
-bun open-pencil info design.fig --json
-bun open-pencil find --name "Button" --json  # app mode
-bun open-pencil analyze colors design.fig --json
-```
+Every command that reports structured data supports `--json` when appropriate.
 
 ## MCP Server
 
-### Stdio (Claude Desktop, Cursor)
+### Stdio MCP clients
 
-Add to your MCP config:
+Use Bun by default:
 
 ```json
 {
   "mcpServers": {
     "open-pencil": {
-      "command": "npx",
+      "command": "bunx",
       "args": ["openpencil-mcp"]
     }
   }
 }
 ```
 
-### HTTP (multi-session, remote)
+If `@open-pencil/mcp` is installed globally, direct binaries also work:
 
-```bash
-export PORT=3100
-export OPENPENCIL_MCP_AUTH_TOKEN=secret       # optional auth
-export OPENPENCIL_MCP_CORS_ORIGIN="*"         # optional CORS
-export OPENPENCIL_MCP_ROOT=/path/to/files     # restrict file access
-
-npx openpencil-mcp-http
+```json
+{
+  "mcpServers": {
+    "open-pencil": {
+      "command": "openpencil-mcp"
+    }
+  }
+}
 ```
 
-### MCP Workflow
+### HTTP / Streamable HTTP
 
-1. **Open a file** — `open_file { path: "/path/to/design.fig" }` or `new_document {}`
-2. **Query** — `get_page_tree`, `find_nodes`, `query_nodes`, `get_node`, `list_pages`, etc.
-3. **Inspect** — `get_jsx` (JSX view), `diff_jsx` (structural diff), `describe` (semantic analysis), `export_image` (visual screenshot)
-4. **Modify** — `render` (JSX), `set_fill`, `set_layout`, `create_shape`, etc.
-5. **Save** — `save_file { path: "/path/to/output.fig" }`
+```bash
+export PORT=7600
+export OPENPENCIL_MCP_AUTH_TOKEN=secret       # optional auth for /mcp
+export OPENPENCIL_MCP_CORS_ORIGIN="*"         # optional CORS
+export OPENPENCIL_MCP_ROOT=/path/to/files     # enables/scopes open_file/save_file paths
 
-### MCP Tools (94 total)
+openpencil-mcp-http
+# or: bunx openpencil-mcp-http
+```
 
-**Read (14):** `get_selection`, `get_page_tree`, `get_node`, `find_nodes`, `query_nodes`, `get_components`, `list_pages`, `switch_page`, `get_current_page`, `page_bounds`, `select_nodes`, `list_fonts`, `get_jsx`, `diff_jsx`
+### MCP workflow
 
-**Create (7):** `create_shape`, `render`, `create_component`, `create_instance`, `create_page`, `create_vector`, `create_slice`
+1. **Open/create a document** — `open_file { path }` when `OPENPENCIL_MCP_ROOT` is configured, or `new_document {}`.
+2. **Query** — `get_page_tree`, `find_nodes`, `query_nodes`, `get_node`, `list_pages`, `get_current_page`.
+3. **Inspect** — `get_jsx`, `diff_jsx`, `describe`, `export_image`, `export_svg`, `export_pdf`.
+4. **Modify** — `render`, `batch_update`, `update_node`, `set_fill`, `set_layout`, `create_shape`, `import_svg`, etc.
+5. **Save/export** — `save_file`, `export_image`, `export_svg`, `export_pdf`, or CLI `export`.
 
-**Modify (20):** `set_fill`, `set_stroke`, `set_effects`, `update_node`, `set_layout`, `set_constraints`, `set_rotation`, `set_opacity`, `set_radius`, `set_min_max`, `set_text`, `set_font`, `set_font_range`, `set_text_resize`, `set_visible`, `set_blend`, `set_locked`, `set_stroke_align`, `set_text_properties`, `set_layout_child`
+## MCP Tools in 0.12.0 (106 total)
 
-**Structure (17):** `delete_node`, `clone_node`, `rename_node`, `reparent_node`, `group_nodes`, `ungroup_node`, `flatten_nodes`, `node_to_component`, `node_bounds`, `node_move`, `node_resize`, `node_ancestors`, `node_children`, `node_tree`, `node_bindings`, `node_replace_with`, `arrange_nodes`
+**Read and selection (17):** `get_selection`, `get_node`, `find_nodes`, `get_page_tree`, `get_current_page`, `list_pages`, `select_nodes`, `query_nodes`, `get_components`, `switch_page`, `page_bounds`, `list_fonts`, `list_available_fonts`, `get_jsx`, `diff_jsx`, `describe`, `node_tree`
 
-**Variables (11):** `list_variables`, `list_collections`, `get_variable`, `find_variables`, `create_variable`, `set_variable`, `delete_variable`, `bind_variable`, `get_collection`, `create_collection`, `delete_collection`
+**Create and import (12):** `render`, `create_shape`, `create_component`, `create_instance`, `create_page`, `create_vector`, `create_slice`, `import_svg`, `search_icons`, `insert_icon`, `fetch_icons`, `stock_photo`
 
-**Vector & Export (14):** `boolean_union`, `boolean_subtract`, `boolean_intersect`, `boolean_exclude`, `path_get`, `path_set`, `path_scale`, `path_flip`, `path_move`, `viewport_get`, `viewport_set`, `viewport_zoom_to_fit`, `export_svg`, `export_image`
+**Modify (24):** `update_node`, `batch_update`, `set_layout`, `set_layout_child`, `set_radius`, `set_fill`, `set_stroke`, `set_text`, `set_text_properties`, `set_effects`, `set_opacity`, `set_font`, `set_visible`, `set_constraints`, `set_rotation`, `set_minmax`, `set_font_range`, `set_text_resize`, `set_blend`, `set_locked`, `set_stroke_align`, `set_image_fill`, `set_variable`, `bind_variable`
 
-**Analyze & Inspect (8):** `analyze_colors`, `analyze_typography`, `analyze_spacing`, `analyze_clusters`, `diff_create`, `diff_show`, `describe`, `eval`
+**Structure (16):** `delete_node`, `reparent_node`, `node_resize`, `clone_node`, `node_move`, `rename_node`, `group_nodes`, `ungroup_node`, `flatten_nodes`, `node_to_component`, `node_bounds`, `node_ancestors`, `node_children`, `node_bindings`, `node_replace_with`, `arrange`
 
-**File (3):** `open_file`, `save_file`, `new_document`
+**Variables (9):** `list_variables`, `list_collections`, `get_variable`, `find_variables`, `create_variable`, `delete_variable`, `get_collection`, `create_collection`, `delete_collection`
 
-### Key tools for AI agents
+**Vector and viewport (15):** `boolean_union`, `boolean_subtract`, `boolean_intersect`, `boolean_exclude`, `path_get`, `path_set`, `path_scale`, `path_flip`, `path_move`, `viewport_get`, `viewport_set`, `viewport_zoom_to_fit`, `export_svg`, `export_pdf`, `export_image`
 
-- **`query_nodes`** — XPath selectors to find specific nodes without fetching the full tree. Essential for large files.
-- **`get_jsx`** — see any node as JSX (same format the `render` tool accepts). Useful for understanding structure before modifying.
-- **`diff_jsx`** — unified diff between two nodes. Compare before/after, or find differences between similar components.
-- **`describe`** — semantic analysis: what role a node plays, its visual style, layout properties, and potential design issues.
-- **`export_image`** — render a node to PNG and return it. Use for visual verification after making changes.
+**Analyze and generation (9):** `analyze_colors`, `analyze_typography`, `analyze_spacing`, `analyze_clusters`, `diff_create`, `diff_show`, `design_to_tokens`, `design_to_component_map`, `calc`
 
-### JSX Rendering (via `render` tool or `eval`)
+**File and prompts (4):** `save_file`, `open_file`, `new_document`, `get_codegen_prompt`
 
-Create entire component trees in one call:
+> Tool availability can depend on server mode. `open_file`, `save_file`, and disk-writing export paths require `OPENPENCIL_MCP_ROOT` for path scoping.
+
+## Key tools for agents
+
+- **`query_nodes`** — XPath selectors to find specific nodes without fetching the full tree.
+- **`get_jsx`** — inspect any node as JSX in the same format accepted by `render`.
+- **`diff_jsx`** — compare two nodes structurally before editing.
+- **`describe`** — semantic analysis of role, visual style, layout, and design issues.
+- **`batch_update`** — apply multiple node updates efficiently.
+- **`export_image` / `export_svg` / `export_pdf`** — visual verification and deliverables.
+- **`get_codegen_prompt`** — retrieve OpenPencil's current JSX/codegen guidance.
+
+## JSX Rendering
+
+Use the `render` tool or `eval` to create component trees:
 
 ```jsx
 <Frame name="Card" w={320} h="hug" flex="col" gap={16} p={24} bg="#FFF" rounded={16}>
@@ -248,15 +248,15 @@ Create entire component trees in one call:
 </Frame>
 ```
 
-**Elements:** `Frame`, `Text`, `Rectangle`, `Ellipse`, `Line`, `Star`, `Polygon`, `Group`, `Section`, `Component`
+Elements: `Frame`, `Text`, `Rectangle`, `Ellipse`, `Line`, `Star`, `Polygon`, `Group`, `Section`, `Component`, `Instance`.
 
-**Layout shorthands:**
+Common props:
 
 | Prop | Meaning |
 |------|---------|
 | `w`, `h` | Width, height (number or `"hug"` / `"fill"`) |
 | `flex` | `"row"` or `"col"` |
-| `grid`, `columns`, `rows` | CSS Grid — e.g. `columns="1fr 200px 1fr"` |
+| `grid`, `columns`, `rows` | CSS Grid, e.g. `columns="1fr 200px 1fr"` |
 | `gap`, `rowGap`, `columnGap` | Item spacing |
 | `p`, `px`, `py`, `pt`, `pr`, `pb`, `pl` | Padding |
 | `justify` | `"start"`, `"center"`, `"end"`, `"between"` |
@@ -273,21 +273,14 @@ Create entire component trees in one call:
 | `size`, `weight`, `font`, `color`, `textAlign` | Text properties |
 | `colStart`, `rowStart`, `colSpan`, `rowSpan` | Grid child positioning |
 
-## Node IDs
-
-Format: `session:local` (e.g., `1:23`). Get IDs from `find`, `tree`, `query`, or `node` commands.
-
 ## Tips
 
-- Omit the file path to work with the document open in the running OpenPencil editor
-- Start with `info` to understand the document structure
-- Use `tree --depth 2` for a quick overview without overwhelming output
-- Use `query "//COMPONENT"` to discover reusable components with XPath
-- Use `query_nodes` (MCP) to find exactly the nodes you need in large files — avoids fetching the whole tree
-- Use `get_jsx` to see how a node is structured before modifying it
-- After modifying designs, use `export_image` to visually verify the result
-- Use `analyze colors --similar` to find near-duplicate colors to merge
-- Export specific nodes with `--node` instead of full pages for faster results
-- The `eval` command gives you the full Figma Plugin API for anything the CLI doesn't cover
-- Use `--json` when piping output to other tools
-- In app mode, `eval` modifications are reflected live in the editor
+- Omit the file path to work with the document open in the running OpenPencil editor.
+- Start with `info` or `get_page_tree` to understand the document.
+- Use `tree --depth 2` or `query_nodes` to avoid overwhelming output on large files.
+- Export specific nodes with `--node` for faster visual checks.
+- Use `export_image` after changes to verify visual quality.
+- Use `analyze colors --similar` to find near-duplicate colors.
+- Use `eval` for Figma Plugin API operations not covered by a dedicated CLI/MCP tool.
+- Use `--json` when piping CLI output to scripts.
+- In app mode, `eval` and MCP modifications are reflected live in the editor.
