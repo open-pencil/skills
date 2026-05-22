@@ -14,10 +14,10 @@ Use two modes:
 
 ```bash
 # App mode — operates on the document open in the editor
-bun open-pencil tree
+openpencil tree
 
 # Headless mode — operates on a .fig file
-bun open-pencil tree design.fig
+openpencil tree design.fig
 ```
 
 Current reference version: OpenPencil `0.12.x`. The MCP server exposes 106 tools in `0.12.0`.
@@ -41,7 +41,7 @@ The desktop app starts `openpencil-mcp-http` automatically in production Tauri b
 ## CLI Commands
 
 ```bash
-bun open-pencil --help
+openpencil --help
 ```
 
 Commands in `0.12.x`:
@@ -64,31 +64,31 @@ Commands in `0.12.x`:
 ### Inspect
 
 ```bash
-bun open-pencil info design.fig
-bun open-pencil tree design.fig
-bun open-pencil tree --page "Components" --depth 3  # app mode
-bun open-pencil pages design.fig
-bun open-pencil node design.fig --id 1:23
-bun open-pencil node --id 1:23  # app mode
-bun open-pencil selection --json
-bun open-pencil variables design.fig
-bun open-pencil variables --collection "Colors" --type COLOR
+openpencil info design.fig
+openpencil tree design.fig
+openpencil tree --page "Components" --depth 3  # app mode
+openpencil pages design.fig
+openpencil node design.fig --id 1:23
+openpencil node --id 1:23  # app mode
+openpencil selection --json
+openpencil variables design.fig
+openpencil variables --collection "Colors" --type COLOR
 ```
 
 ### Search and XPath query
 
 ```bash
-bun open-pencil find design.fig --name "Button"
-bun open-pencil find --type FRAME                          # app mode
-bun open-pencil find design.fig --type TEXT --page "Home"
-bun open-pencil find design.fig --name "Card" --type COMPONENT --limit 50
+openpencil find design.fig --name "Button"
+openpencil find --type FRAME                          # app mode
+openpencil find design.fig --type TEXT --page "Home"
+openpencil find design.fig --name "Card" --type COMPONENT --limit 50
 
-bun open-pencil query design.fig "//FRAME"
-bun open-pencil query design.fig "//FRAME[@width < 300]"
-bun open-pencil query design.fig "//TEXT[contains(@name, 'Button')]"
-bun open-pencil query design.fig "//COMPONENT[@stackMode]"
-bun open-pencil query design.fig "//COMPONENT//FRAME//TEXT"
-bun open-pencil query "//FRAME[@width > 1000]"             # app mode
+openpencil query design.fig "//FRAME"
+openpencil query design.fig "//FRAME[@width < 300]"
+openpencil query design.fig "//TEXT[contains(@name, 'Button')]"
+openpencil query design.fig "//COMPONENT[@stackMode]"
+openpencil query design.fig "//COMPONENT//FRAME//TEXT"
+openpencil query "//FRAME[@width > 1000]"             # app mode
 ```
 
 Common node types: `FRAME`, `TEXT`, `RECTANGLE`, `ELLIPSE`, `VECTOR`, `GROUP`, `COMPONENT`, `COMPONENT_SET`, `INSTANCE`, `SECTION`, `LINE`, `STAR`, `POLYGON`, `SLICE`, `BOOLEAN_OPERATION`.
@@ -96,32 +96,32 @@ Common node types: `FRAME`, `TEXT`, `RECTANGLE`, `ELLIPSE`, `VECTOR`, `GROUP`, `
 ### Export and convert
 
 ```bash
-bun open-pencil export design.fig -o hero.png
-bun open-pencil export -o hero.png                         # app mode
-bun open-pencil export design.fig --node 1:23 -s 2 -o button@2x.png
-bun open-pencil export design.fig -f jpg -q 85 -o preview.jpg
-bun open-pencil export design.fig -f svg --node 1:23 -o icon.svg
-bun open-pencil export design.fig -f pdf -o page.pdf
-bun open-pencil export design.fig -f fig -o roundtrip.fig
-bun open-pencil export design.fig -f jsx -o component.jsx
-bun open-pencil export design.fig -f jsx --style tailwind -o component.tsx
-bun open-pencil export design.fig --thumbnail --width 1920 --height 1080
-bun open-pencil export --page "Components" -o components.png
+openpencil export design.fig -o hero.png
+openpencil export -o hero.png                         # app mode
+openpencil export design.fig --node 1:23 -s 2 -o button@2x.png
+openpencil export design.fig -f jpg -q 85 -o preview.jpg
+openpencil export design.fig -f svg --node 1:23 -o icon.svg
+openpencil export design.fig -f pdf -o page.pdf
+openpencil export design.fig -f fig -o roundtrip.fig
+openpencil export design.fig -f jsx -o component.jsx
+openpencil export design.fig -f jsx --style tailwind -o component.tsx
+openpencil export design.fig --thumbnail --width 1920 --height 1080
+openpencil export --page "Components" -o components.png
 
-bun open-pencil convert design.fig -o design.pen
-bun open-pencil formats
+openpencil convert design.fig -o design.pen
+openpencil formats
 ```
 
 ### Analyze and lint
 
 ```bash
-bun open-pencil analyze colors design.fig
-bun open-pencil analyze colors --similar --threshold 10     # app mode
-bun open-pencil analyze typography design.fig --group-by size
-bun open-pencil analyze spacing design.fig --grid 8
-bun open-pencil analyze clusters design.fig --min-count 3
-bun open-pencil lint design.fig
-bun open-pencil lint design.fig --json
+openpencil analyze colors design.fig
+openpencil analyze colors --similar --threshold 10     # app mode
+openpencil analyze typography design.fig --group-by size
+openpencil analyze spacing design.fig --grid 8
+openpencil analyze clusters design.fig --min-count 3
+openpencil lint design.fig
+openpencil lint design.fig --json
 ```
 
 ### Eval (Figma Plugin API)
@@ -129,26 +129,26 @@ bun open-pencil lint design.fig --json
 Execute JavaScript against the document using a Figma Plugin API-compatible runtime:
 
 ```bash
-bun open-pencil eval design.fig -c 'figma.currentPage.findAll(n => n.type === "TEXT").length'
+openpencil eval design.fig -c 'figma.currentPage.findAll(n => n.type === "TEXT").length'
 
 # App mode — modifies the live document in the editor
-bun open-pencil eval -c '
+openpencil eval -c '
   const buttons = figma.currentPage.findAll(n => n.name === "Button");
   buttons.forEach(b => { b.cornerRadius = 8 });
   buttons.length + " buttons updated"
 '
 
 # Modify and save to the same file
-bun open-pencil eval design.fig -w -c '
+openpencil eval design.fig -w -c '
   const texts = figma.currentPage.findAll(n => n.type === "TEXT");
   texts.forEach(t => { t.fontSize = 16 });
 '
 
 # Save to a different file
-bun open-pencil eval design.fig -o modified.fig -c '...'
+openpencil eval design.fig -o modified.fig -c '...'
 
 # Read code from stdin
-echo 'figma.currentPage.children.map(n => n.name)' | bun open-pencil eval design.fig --stdin
+echo 'figma.currentPage.children.map(n => n.name)' | openpencil eval design.fig --stdin
 ```
 
 Every command that reports structured data supports `--json` when appropriate.
