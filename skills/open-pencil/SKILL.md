@@ -200,7 +200,8 @@ openpencil-mcp-http
 2. **Query** — `get_page_tree`, `find_nodes`, `query_nodes`, `get_node`, `list_pages`, `get_current_page`.
 3. **Inspect** — `get_jsx`, `diff_jsx`, `describe`, `export_image`, `export_svg`, `export_pdf`.
 4. **Modify** — `render`, `batch_update`, `update_node`, `set_fill`, `set_layout`, `create_shape`, `import_svg`, etc.
-5. **Save/export** — `save_file`, `export_image`, `export_svg`, `export_pdf`, or CLI `export`.
+5. **Navigate** — after creating or editing visible canvas content, call `select_nodes` and `viewport_zoom_to_fit { id }` (or `node_bounds` + `viewport_set`) so the user can see the result in the running editor.
+6. **Save/export** — `save_file`, `export_image`, `export_svg`, `export_pdf`, or CLI `export`.
 
 ## MCP Tools in 0.12.0 (106 total)
 
@@ -230,15 +231,16 @@ openpencil-mcp-http
 - **`describe`** — semantic analysis of role, visual style, layout, and design issues.
 - **`batch_update`** — apply multiple node updates efficiently.
 - **`export_image` / `export_svg` / `export_pdf`** — visual verification and deliverables.
+- **`viewport_zoom_to_fit` / `viewport_set` / `viewport_get`** — keep the live editor focused on the created or edited design.
 - **`get_codegen_prompt`** — retrieve OpenPencil's current JSX/codegen guidance.
 
 ## JSX Rendering
 
-Use the `render` tool or `eval` to create component trees:
+Use the `render` tool or `eval` to create component trees. If unsure about JSX syntax, call `get_codegen_prompt` first.
 
 ```jsx
 <Frame name="Card" w={320} h="hug" flex="col" gap={16} p={24} bg="#FFF" rounded={16}>
-  <Text size={18} weight="bold">Title</Text>
+  <Text size={18} weight="bold" color="#111">Title</Text>
   <Text size={14} color="#666">Description text</Text>
   <Frame flex="row" gap={8}>
     <Frame w={80} h={36} bg="#3B82F6" rounded={8} justify="center" items="center">
@@ -249,6 +251,12 @@ Use the `render` tool or `eval` to create component trees:
 ```
 
 Elements: `Frame`, `Text`, `Rectangle`, `Ellipse`, `Line`, `Star`, `Polygon`, `Group`, `Section`, `Component`, `Instance`.
+
+Text content is the child content of `<Text>`. Use design-JSX props, not Figma API field names:
+
+```jsx
+<Text size={48} weight="bold" font="Inter" color="#111">Design faster with AI</Text>
+```
 
 Common props:
 
@@ -280,6 +288,8 @@ Common props:
 - Use `tree --depth 2` or `query_nodes` to avoid overwhelming output on large files.
 - Export specific nodes with `--node` for faster visual checks.
 - Use `export_image` after changes to verify visual quality.
+- After creating a visible design, select it and zoom the editor to it: `select_nodes { ids: [id] }` then `viewport_zoom_to_fit { id }`.
+- If zoom-to-fit is unavailable in a client, use `node_bounds` to calculate the center and call `viewport_set { x, y, zoom }`.
 - Use `analyze colors --similar` to find near-duplicate colors.
 - Use `eval` for Figma Plugin API operations not covered by a dedicated CLI/MCP tool.
 - Use `--json` when piping CLI output to scripts.
