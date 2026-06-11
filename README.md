@@ -26,3 +26,7 @@ bun add -g @open-pencil/cli @open-pencil/mcp
 - [Documentation](https://openpencil.dev)
 - [MCP Server](https://www.npmjs.com/package/@open-pencil/mcp) — `openpencil-mcp` / `openpencil-mcp-http`
 - [CLI](https://www.npmjs.com/package/@open-pencil/cli) — `openpencil`
+
+---
+
+Maintained as part of [OpenPencil](https://github.com/open-pencil) for the [OpenPencil editor](https://github.com/open-pencil/open-pencil).
